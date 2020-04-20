@@ -110,3 +110,7 @@ prettyTex = f id . transform g
 
         g (App x (List [y])) | x `elem` words "Ident UnGuardedRhs UnQual Lit" = y
         g x = x
+
+classA :: QName () -> [Type ()] -> Asst ()
+classA clsN = TypeA () . go
+  where go = foldl' (\acc a -> TyApp () a acc) (TyCon () clsN)

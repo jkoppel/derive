@@ -11,6 +11,7 @@ import Control.Exception
 import Data.Typeable
 import System.IO.Unsafe
 import Data.Maybe
+import Data.Derive.DSL.DSL (classA)
 
 
 class (Typeable a, Typeable b, Show a, Show b) => Convert a b where
@@ -114,9 +115,8 @@ instance Convert TH.Type (HS.Type ()) where
         x -> TyApp () x $ c y
 
 instance Convert TH.Type (HS.Asst ()) where
-    conv (ConT x) = ClassA () (UnQual () $ c x) []
-    conv (AppT x y) = case c x of
-        ClassA _ a b -> ClassA () a (b ++ [c y])
+    conv (ConT x) = classA (UnQual () $ c x) []
+    conv (AppT x y) = TypeA () (TyApp () (c x) (c y))
 
 instance Convert (HS.Decl ()) TH.Dec where
     conv (InstDecl _ _ (fromIParen -> IRule _ _ cxt (fromInstHead -> (nam,typ))) ds) =
@@ -171,8 +171,7 @@ instance Convert ([HS.Name ()],HS.Type ()) [TH.VarStrictType] where
      where (s,t) = c bt
 
 instance Convert (HS.Asst ()) TH.Type where
-    conv (InfixA _ x y z) = c $ ClassA () y [x,z]
-    conv (ClassA _ x y) = appT (ConT $ c x) (c y)
+    conv (TypeA _ ty) = c ty
 
 instance Convert (HS.Type ()) TH.Type where
     conv (TyCon _ (Special _ ListCon{})) = ListT
@@ -300,6 +299,7 @@ instance Convert TH.TyVarBndr (HS.TyVarBind ()) where
 instance Convert (TH.Kind ()) HS.Kind where
     conv StarK = KindStar
     conv (ArrowK x y) = KindFn (c x) $ c y
+#elif __GLASGOW_HASKELL__ >= 808
 #else
 instance Convert TH.Kind (HS.Kind ()) where
     conv StarT = KindStar ()
@@ -324,6 +324,7 @@ instance Convert (HS.TyVarBind ()) TH.TyVarBndr where
 instance Convert (HS.Kind ()) TH.Kind where
     conv (KindStar _) = StarK
     conv (KindFn _ x y) = ArrowK (c x) $ c y
+#elif __GLASGOW_HASKELL__ >= 808
 #else
 instance Convert (HS.Kind ()) TH.Kind where
     conv KindStar{} = StarT

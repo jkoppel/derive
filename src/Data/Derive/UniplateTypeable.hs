@@ -92,10 +92,10 @@ custom (_,d) [InstDecl () x2 (IRule () x3 _ ihead) x7] = [InstDecl () x2 (IRule 
         vars = dataDeclVars d
         dd = (if null vars then id else TyParen ()) $ tyApps (tyCon $ dataDeclName d) (map tyVar vars)
         x4 = Just $ CxTuple () $
-          concatMap f vars ++ [ClassA () (qname x) [tyVar "to"] | x <- ["Typeable","Uniplate"]]
+          concatMap f vars ++ [classA (qname x) [tyVar "to"] | x <- ["Typeable","Uniplate"]]
         x6 = [dd, tyVar "to"]
         iheadOut = foldr (flip (IHApp ())) (IHCon () x5) x6
-        f v = [ClassA () (qname "Typeable") [tyVar v], ClassA () (qname "PlateAll") [tyVar v, tyVar "to"]]
+        f v = [classA (qname "Typeable") [tyVar v], classA (qname "PlateAll") [tyVar v, tyVar "to"]]
         collect acc (IHCon () qname) = (acc, qname)
         collect acc (IHInfix () arg qname) = (arg:acc, qname)
         collect acc (IHParen () ih) = collect acc ih

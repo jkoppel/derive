@@ -22,6 +22,7 @@ module Data.Derive.Internal.Traversal(
 
 import Language.Haskell
 import Data.Derive.Internal.Derivation
+import Data.Derive.DSL.DSL (classA)
 import Data.List
 import qualified Data.Set as S
 import Control.Monad.Trans.Writer
@@ -108,7 +109,7 @@ traversalInstance tt nameBase dat bodyM = -- [simplify $ InstDecl () Nothing [] 
         instHead = foldr (flip (IHApp ())) (IHCon () nam) args
         (body, required) = runWriter (sequence bodyM)
         ctx  = CxTuple ()
-               [ ClassA () (qname $ className p) (tyVar n : vars tyVar 's' (p - 1))
+               [ classA (qname $ className p) (tyVar n : vars tyVar 's' (p - 1))
                | RequiredInstance n p <- S.toList required
                ]
         vrs  = vars tyVar 't' (dataDeclArity dat)
@@ -146,7 +147,7 @@ deriveTraversalCtor tt ap ctor = do
 -- | Derive a traversal for a type
 deriveTraversalType :: TraveralType -> ArgPositions -> Type () -> WithInstances Trav
 deriveTraversalType tt ap (TyParen () x) = deriveTraversalType tt ap x
-deriveTraversalType tt ap TyForall{}  = fail "forall not supported in traversal deriving"
+deriveTraversalType tt ap TyForall{}  = error "forall not supported in traversal deriving"
 deriveTraversalType tt ap (TyFun () a b)
                                            = fromJust (traverseArrow tt)
                                                  <$> deriveTraversalType tt{traversalCo = not $ traversalCo tt} ap a
@@ -157,7 +158,7 @@ deriveTraversalType tt ap (TyTuple () b a)    = deriveTraversalType tt ap $ tyAp
 deriveTraversalType tt ap (TyCon () n)        = return $ traversalId tt -- T
 deriveTraversalType tt ap (TyVar () (Ident () n)) -- a
   | ap n /= traversalArg tt                = return $ traversalId tt
-  | traversalCo tt                         = fail "tyvar used in covariant position"
+  | traversalCo tt                         = error "tyvar used in covariant position"
   | otherwise                              = return $ traversalDirect tt
 
 
@@ -177,7 +178,7 @@ deriveTraversalApp tt ap tycon args = do -- T a b c
          tArgs <- mapM (deriveTraversalType tt ap) args
          -- need instances?
          case tycon of
-           TyVar () (Ident () n) | ap n == traversalArg tt -> fail "kind error: type used type constructor"
+           TyVar () (Ident () n) | ap n == traversalArg tt -> error "kind error: type used type constructor"
                    | otherwise               -> tell $ S.fromList
                                                 [ RequiredInstance n i
                                                 | (t,i) <- zip (reverse tArgs) [1..]
